@@ -1,0 +1,14 @@
+[Unit] 
+Description=SCD30 sensor server
+
+[Service]
+User=sveng
+# wont have to move binaries to bin...
+WorkingDirectory={{ app_dir }}
+ExecStart={{ app_dir }}/scripts/scd30-start.sh
+Type=forking
+# Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
