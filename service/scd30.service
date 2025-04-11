@@ -7,7 +7,9 @@ User=sveng
 WorkingDirectory=/home/sveng/scd30
 ExecStart=/home/sveng/scd30/scripts/scd30-start.sh
 Type=forking
-# Restart=always
+StandardOutput=null
+Restart=always
+RestartSec=30
 
 [Install]
 WantedBy=multi-user.target

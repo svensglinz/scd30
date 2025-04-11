@@ -1,10 +1,11 @@
 #!/bin/bash
 
-FLASK_APP="/home/sveng/scd30/src/data_backend.py"
-PORT="8080"
-READ_INTERVAL=30
-WORKING_DIR="$(dirname ${BASH_SOURCE[0]})"
+# user configurable 
+PORT=8080
 
+# do not change
+WORKING_DIR="$(dirname ${BASH_SOURCE[0]})"
+FLASK_APP="$WORKING_DIR/src/data_backend.py"
 cd "$WORKING_DIR"
 
 # check sudo
@@ -38,17 +39,21 @@ echo "***************"
 # make
 
 # substitute variables into executable
-sed "s|{{ port }}|$PORT|g; s|{{ flask_app }}|$FLASK_APP|g; s|{{ bin_path }}|$BIN_PATH|g; s|{{ app_dir }}|$PWD|g" ./scripts/scd30-start-tmp.sh > ./scripts/scd30-start.sh
+sed "s|{{ port }}|$PORT|g; s|{{ flask_app }}|$FLASK_APP|g; s|{{ app_dir }}|$PWD|g" ./scripts/scd30-start-tmp.sh > ./scripts/scd30-start.sh
 sed "s|{{ app_dir }}|$PWD|g" ./service/scd30-tmp.service > ./service/scd30.service
 
 chmod +x ./scripts/scd30-start.sh
 
 # install systemd service & run
 
-echo "copying ./scripts/scd30.service to /etc/sytemd/system/"
+echo "copying ./service/scd30.service to /etc/sytemd/system/"
 cp ./service/scd30.service /etc/systemd/system/
 check_error "could not move scd30.service to /etc/systemd/system"
 
+echo "enabling scd30.service for autostartup"
+systemctl enable scd30
+
+echo "reloading system daemon"
 systemctl daemon-reload
 # systemctl start scd30.service
 check_error "error starting scd30 service"
