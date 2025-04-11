@@ -3,11 +3,9 @@ Description=SCD30 sensor server
 
 [Service]
 User=sveng
-# wont have to move binaries to bin...
 WorkingDirectory={{ app_dir }}
-ExecStart={{ app_dir }}/scripts/scd30-start.sh
-Type=forking
-StandardOutput=null
+ExecStart={{ app_dir }}/bin/query_scd30 -i {{ read_interval }} -p {{ port }}
+Type=simple
 Restart=always
 RestartSec=30
 

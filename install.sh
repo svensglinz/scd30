@@ -2,10 +2,10 @@
 
 # user configurable 
 PORT=8080
+READ_INTERVAL=30
 
 # do not change
 WORKING_DIR="$(dirname ${BASH_SOURCE[0]})"
-FLASK_APP="$WORKING_DIR/src/data_backend.py"
 cd "$WORKING_DIR"
 
 # check sudo
@@ -27,8 +27,10 @@ unroll(){
 
 trap unroll ERR
 
+echo ""
 echo "installing scd30 temperature server"
 echo "***************"
+echo ""
 
 # check dependencies
 #check_dependency "python3"
@@ -39,10 +41,8 @@ echo "***************"
 # make
 
 # substitute variables into executable
-sed "s|{{ port }}|$PORT|g; s|{{ flask_app }}|$FLASK_APP|g; s|{{ app_dir }}|$PWD|g" ./scripts/scd30-start-tmp.sh > ./scripts/scd30-start.sh
-sed "s|{{ app_dir }}|$PWD|g" ./service/scd30-tmp.service > ./service/scd30.service
-
-chmod +x ./scripts/scd30-start.sh
+sed "s|{{ port }}|$PORT|g; s|{{ read_interval }}|$READ_INTERVAL|g; s|{{ app_dir }}|$PWD|g" ./service/scd30-tmp.service > ./service/scd30.service
+make
 
 # install systemd service & run
 
@@ -55,10 +55,12 @@ systemctl enable scd30
 
 echo "reloading system daemon"
 systemctl daemon-reload
-# systemctl start scd30.service
+systemctl enable scd30
 check_error "error starting scd30 service"
 
+echo ""
 echo "installation successful"
-# echo "start the server with systemctl start scd30"
+echo "start the server with `systemctl start scd30` or reboot."
 echo "*************"
+echo ""
 exit 0

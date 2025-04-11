@@ -16,16 +16,12 @@
 #include <sys/socket.h>
 #include <pthread.h>
 #include <netinet/in.h>
-#include <getopt.h>
 
-#define PORT_DEFAULT 8080
-#define INTERVAL_DEFAULT 30
+#define PORT 8080
 
 // global vars
-
 pthread_mutex_t lock;
 struct scd30_data sensor_data;
-int port, interval;
 
 void handle(int client_fd) {
 	char buffer[1024];
@@ -33,14 +29,13 @@ void handle(int client_fd) {
 
 	if (strncmp(buffer, "GET /", 5) == 0) {
 		char body[128];
-		char response[512];
 		pthread_mutex_lock(&lock);
-		snprintf(body, sizeof(body), "{\"temp\": %f, \"humidity\": %f, \"co2\": %f}", sensor_data.temp, sensor_data.humidity, sensor_data.co2);
+		snprintf(body, sizeof(body), "{temp: %f, humidity: %f, co2: %f }", sensor_data.temp, sensor_data.humidity, sensor_data.co2);
 		pthread_mutex_unlock(&lock);
 
 		snprintf(response, sizeof(response),
 		"HTTP/1.1 200 OK\r\n"
-		"Content-Type: application/json\r\n"
+		"Content-Type: text/plain\r\n"
 		"Content-Length: %ld\r\n"
 		"Connection: close\r\n"
 		"\r\n"
@@ -63,7 +58,7 @@ void *serve(void *args) {
 
 	addr.sin_family = AF_INET;
 	addr.sin_addr.s_addr = INADDR_ANY;
-	addr.sin_port = htons(port);
+	addr.sin_port = htons(PORT);
 
 	bind(server_fd, (struct sockaddr *)&addr, sizeof(addr));
 	listen(server_fd, 10);
@@ -75,22 +70,7 @@ void *serve(void *args) {
 	return NULL;
 }
 
-int main(int argc, char** argv) {
-
-	// defautl value
-	interval = INTERVAL_DEFAULT;
-	port = PORT_DEFAULT;
-	// parse arguments
-	int c; 
-	while ((c = getopt(argc, argv, "i:p:")) != -1)
-		switch(c) {
-			case 'i': interval = atoi(optarg);
-			break;
-			case 'p': port = atoi(optarg);
-			break;
-			case '?': fprintf(stderr, "Unknown option %s\n", optopt); exit(1);
-		 }
-
+int main() {
 //  initiate connection
     scd30_init();
 
@@ -99,7 +79,7 @@ int main(int argc, char** argv) {
 
     while (1) {
         while (!scd30_get_data_ready_status()) {
-            sleep(interval); // query only every 10 seconds
+            sleep(10); // query only every 10 seconds
         }
 
 	pthread_mutex_lock(&lock);
@@ -108,6 +88,11 @@ int main(int argc, char** argv) {
 	    continue;
         }
 	pthread_mutex_unlock(&lock);
+
+        // process data from the sensor!
+        printf("temperature read: %f\n", sensor_data.temp);
+        printf("humidity read: %f\n", sensor_data.humidity);
+        printf("co2 read: %f\n", sensor_data.co2);
   }
 
  pthread_join(server_thread, NULL);

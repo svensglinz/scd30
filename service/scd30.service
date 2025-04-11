@@ -3,11 +3,9 @@ Description=SCD30 sensor server
 
 [Service]
 User=sveng
-# wont have to move binaries to bin...
 WorkingDirectory=/home/sveng/scd30
-ExecStart=/home/sveng/scd30/scripts/scd30-start.sh
-Type=forking
-StandardOutput=null
+ExecStart=/home/sveng/scd30/bin/query_scd30 -i 30 -p 8080
+Type=simple
 Restart=always
 RestartSec=30
 
