@@ -7,9 +7,7 @@ It allows for easy integration with home automation tools or other systems that 
 ### Features
 
 - **C library** to communicate with the SCD30 sensor via I2C (based on the official Sensirion datasheet [here](https://www.google.com)).
-- A C program (`query_scd30`) that queries the sensor every 10 seconds and writes the data to shared memory.
-- A minimal **Flask web** server that reads from shared memory and serves the sensor data as JSON:
-{ "temp": float, "co2": float, "humidity": float }
+- A C program (`query_scd30`) that queries the sensor every 10 seconds and serves the data via http as { "temp": float, "co2": float, "humidity": float }.
 - Automatic service startup via systemd
 - One-step installation with an `install.sh` script
 
@@ -30,15 +28,16 @@ sudo ./install.sh
 
 This script will: 
 - Compile the C source file `query_scd30.c`
-- Set up shared memory access 
-- Install Python dependencies (Flask)
 - Move and enable the systemd service
 - Start the sensor querying and web server on boot
 
 ### Optional configs
 
-The default webserver runs on port 8080. This can be changed by changing the `PORT` variable 
+- The default webserver runs on port 8080. This can be changed by changing the `PORT` variable 
 in the `install.sh` script before installation. 
+
+- The default sensor querying interval is set to 30 seconds. This can be changed by changing the `INTERVAL` variable
+in the `install.sh` script before installation.
 
 ### Usage 
 ...
