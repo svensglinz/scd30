@@ -24,7 +24,6 @@ typedef struct {
 
 int scd30_calculate_crc(uint8_t*, size_t);
 float scd30_convert_measure(uint8_t *data);
-int scd30_write_cmd(uint16_t);
 int scd30_write_cmd_arg(uint16_t, uint16_t);
 
 // instantiate file descriptor to SCD30
@@ -45,15 +44,6 @@ int scd30_start_continuous_measure(sdc30_device_t* handle, uint16_t pressure) {
 	scd30_write_cmd_arg(SCD30_START_CONTINUOUS_MEASURE, pressure_no);
 	return 0;
 }
-// write 2 byte command to device
-int scd30_write_cmd(scd30_device_t* handle, uint16_t cmd) {
-    // convert to network order
-    uint16_t cmd_no = htons(cmd);
-    if (write(scd30_fd, &cmd_no, 2) < 0) {
-        return -1;
-    }
-    return 0;
-}
 
 // write 2 byte command and 2 byte argument to device
 int scd30_write_cmd_arg(scd30_device_t* handle, uint16_t cmd, uint16_t arg) {
@@ -65,13 +55,6 @@ int scd30_write_cmd_arg(scd30_device_t* handle, uint16_t cmd, uint16_t arg) {
 
     uint16_t buf[] = {cmd_no, arg_no, check};
     if (write(scd30_fd, buf, 5) < 0) {
-        return -1;
-    }
-    return 0;
-}
-
-int scd30_read(scd30_device_t* handle, void *buf, size_t size) {
-    if (read(scd30_fd, buf, size) < 0) {
         return -1;
     }
     return 0;
@@ -104,7 +87,7 @@ int scd30_validate_crc(uint8_t *data, size_t len, uint8_t checksum) {
 
 // Send stop signal to the sensor to stop measuring data
 int scd30_stop_continous_measure(scd30_device_t* handle) {
-   if (scd30_write_cmd(SCD30_STOP_CONTINUOUS_MEASURE) < 0) {
+   if (write(handle->fd, htons(SCD30_STOP_CONTINUOUS_MEASURE), sizeof(SCD30_STOP_CONTINOUS_MEASURE)) < 0) {
     return -1;
   }
   return 0;
@@ -118,7 +101,7 @@ int scd30_get_data_ready_status(scd30_device_t* handle) {
   uint8_t read_buff[3];
 
   // send request
-  if (scd30_write_cmd(SCD30_GET_DATA_READY_STATUS) < 0) {
+  if (write(handle->fd, htons(SCD30_GET_DATA_READY_STATUS)) < 0) {
     return -1;
   }
 
@@ -149,13 +132,13 @@ int scd30_read_measurement(scd30_device_t* handle, struct scd30_data *buf) {
   uint8_t read_buff[18];
 
   // send read command
-  if (scd30_write_cmd(SCD30_READ_MEASUREMENT) < 0) {
+  if (write(handle->fd, htons(SCD30_READ_MEASUREMENT)) < 0) {
       return -1;
     }
 
   // minimum waiting period
   usleep(10000);
-  if (read(scd30_fd, &read_buff, sizeof(read_buff)) < 0) {
+  if (read(handle->fd, &read_buff, sizeof(read_buff)) < 0) {
       return -1;
     }
 
@@ -188,14 +171,14 @@ int scd30_read_measurement(scd30_device_t* handle, struct scd30_data *buf) {
 }
 
 int scd30_soft_reset(scd30_device_t* handle) {
-  if (scd30_write_cmd(SCD30_SOFT_RESET) < 0) {
+  if (write(handle->fd, htons(SCD30_SOFT_RESET)) < 0) {
     return -1;
   }
   return 0;
 }
 
 int scd30_set_temperature_offset(uint16_t offset) {
-
+	
   if (scd30_write_cmd_arg(SCD30_SET_TEMPERATURE_OFFSET, offset) < 0) {
     return -1;
   }
@@ -213,7 +196,7 @@ int scd30_set_temperature_offset(uint16_t offset) {
 int scd30_get_temperature_offset(scd30_device_t* handle, uint16_t *offset) {
     uint8_t buf[3];
 
-    if (scd30_write_cmd(SCD30_SET_TEMPERATURE_OFFSET) < 0) {
+    if (write(handle->fd, htons(SCD30_SET_TEMPERATURE_OFFSET)) < 0) {
         return -1;
     }
 
@@ -245,7 +228,7 @@ int scd30_set_altitude_compensation(scd30_device_t* handle, uint16_t offset) {
 }
 
 int scd30_get_altitude_compensation(scd30_device_t* handle, uint16_t *offset) {
-  if (scd30_write_cmd(SCD30_SET_ALTITUDE_COMPENSATION) < 0) {
+  if (write(handle->fd, htons(SCD30_SET_ALTITUDE_COMPENSATION)) < 0) {
     return -1;
   }
   usleep(10000);
@@ -270,7 +253,7 @@ int scd30_set_forced_recalibration_value(scd30_device_t* handle, uint16_t concen
 }
 
 int scd30_get_forced_recalibration_value(scd30_device_t* handle, uint16_t *concentration) {
-  if (scd30_write_cmd(SCD30_SET_FORCED_RECALIBRATION_VALUE) < 0) {
+  if (write(handle->fd, htons(SCD30_SET_FORCED_RECALIBRATION_VALUE)) < 0) {
     return -1;
   }
 
@@ -300,7 +283,7 @@ int scd30_set_measurement_interval(scd30_device_t* handle, uint16_t interval) {
 }
 
 int scd30_get_measurement_interval(scd30_device_t* handle, uint16_t *interval) {
-  if (scd30_write_cmd(SCD30_SET_MEASUREMENT_INTERVAL) < 0) {
+  if (write(handle->fd, htons(SCD30_SET_MEASUREMENT_INTERVAL)) < 0) {
     return -1;
   }
 
@@ -330,7 +313,7 @@ int scd30_set_automatic_self_calibration(scd30_device_t* handle, uint16_t status
 }
 
 int scd30_get_automatic_self_calibration(scd30_device_t* handle, uint16_t *status) {
-  if (scd30_write_cmd(SCD30_SET_AUTOMATIC_SELF_CALIBRATION) < 0) {
+  if (write(handle->fd, htons(SCD30_SET_AUTOMATIC_SELF_CALIBRATION)) < 0) {
     return - 1;
   }
 
