@@ -14,6 +14,12 @@
  * changed by redefining the I2C_PATH and SCD30_ADDR macros
  * -------------------------------------------------------------*/
 
+#if defined(__GNUC__) && __GNUC__ > 4
+	#define SCD30_API __attribute__((visibility("default")))
+#else
+	#define SCD30_API
+#endif
+
 typedef struct {
 	int fd;
 	uint8_t address; 
@@ -26,8 +32,9 @@ int scd30_calculate_crc(uint8_t*, size_t);
 float scd30_convert_measure(uint8_t *data);
 int scd30_write_cmd_arg(uint16_t, uint16_t);
 
+
 // instantiate file descriptor to SCD30
-int scd30_init(scd30_device_t* handle) {
+SCD30_API int scd30_init(scd30_device_t* handle) {
   // set address ? 
   if ((handle->fd = open(I2C_PATH, O_RDWR)) < 0) {
     return -1;
@@ -38,7 +45,7 @@ int scd30_init(scd30_device_t* handle) {
   return 0;
 }
 
-int scd30_start_continuous_measure(sdc30_device_t* handle, uint16_t pressure) {
+SCD30_API scd30_start_continuous_measure(sdc30_device_t* handle, uint16_t pressure) {
 	uint16_t pressure_no = htons(pressure);
 // build in error handling
 	scd30_write_cmd_arg(SCD30_START_CONTINUOUS_MEASURE, pressure_no);
@@ -46,6 +53,18 @@ int scd30_start_continuous_measure(sdc30_device_t* handle, uint16_t pressure) {
 }
 
 // write 2 byte command and 2 byte argument to device
+int scd30_write_cmd(scd30_device_t* handle, uint16_t cmd, uint16_t val) {
+	uint16_t cmd_h = ntohs(cmd);
+	uint16_t val_h = ntohs(val);
+
+	uint8_t crc = scd30_calculate_crc(&val_h, 2);
+	uint8_t buf[5] = {};
+	if (write(handle->fd, buf, 5) < 0) {
+		return -1;
+	}
+	return 0;
+}
+
 int scd30_write_cmd_arg(scd30_device_t* handle, uint16_t cmd, uint16_t arg) {
     // convert to network order
     uint16_t cmd_no = htons(cmd);
